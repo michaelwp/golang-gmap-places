@@ -10,6 +10,7 @@ ENV SERVER_PORT=""
 RUN go get -d -v go.mongodb.org/mongo-driver/mongo \
     && go get -d -v github.com/gorilla/mux \
     && go get -d -v github.com/gorilla/handlers
+    && go get googlemaps.github.io/maps
 
 EXPOSE 8093
 
