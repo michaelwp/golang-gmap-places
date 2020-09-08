@@ -23,7 +23,7 @@
 - Query Params :
   - `place: {
          type: String,
-         required: false
+         required: Optional
       }`
      
 - Example request:
