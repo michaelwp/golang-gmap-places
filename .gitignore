@@ -1,0 +1,9 @@
+.idea
+tmp
+configs
+.DS_Store
+.env
+Dockerfile
+main
+node_modules
+configs

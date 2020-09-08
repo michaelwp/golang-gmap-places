@@ -1,0 +1,29 @@
+{
+  "name": "smsService",
+  "version": "1.0.0",
+  "description": "SMS SERVICES",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "go test ./test -v"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/michaelwp/smsservice.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/michaelwp/smsservice/issues"
+  },
+  "homepage": "https://gitlab.com/michaelwp/smsservice#readme",
+  "devDependencies": {
+    "pre-push": "^0.1.1"
+  },
+  "pre-push": [
+    "test"
+  ]
+}

@@ -1,0 +1,7 @@
+go.mod
+.air.toml
+tmp
+go.sum
+.env
+main
+node_modules
