@@ -1,6 +1,6 @@
 ## absen-service api documentation :
 > Version: 1
-- ```API-BASE-URL: http://147.139.182.234/api/v1```
+- ```API-BASE-URL: http://0.0.0.0/api/v1```
 
 -------
 
