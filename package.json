@@ -1,7 +1,7 @@
 {
-  "name": "smsService",
+  "name": "gmapService",
   "version": "1.0.0",
-  "description": "SMS SERVICES",
+  "description": "GMAP SERVICES",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/michaelwp/smsservice.git"
+    "url": "git+https://gitlab.com/michaelwp/gmapservices.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/michaelwp/smsservice/issues"
+    "url": "https://gitlab.com/michaelwp/gmapservices/issues"
   },
-  "homepage": "https://gitlab.com/michaelwp/smsservice#readme",
+  "homepage": "https://gitlab.com/michaelwp/gmapservices#readme",
   "devDependencies": {
     "pre-push": "^0.1.1"
   },
