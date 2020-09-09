@@ -3,189 +3,184 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"googlemaps.github.io/maps"
+	"kanggo/absenService/db/v1"
 	"kanggo/absenService/errHandler"
 	"kanggo/absenService/helpers"
 	"kanggo/absenService/models"
 	"net/http"
-	"strconv"
-	"time"
 )
 
-/**
-GET Attendance
-URL: 	{base_url}/api/v1/attendance?project_id={project_id}&worker_id={worker_id}
-QUERY: 	project_id -> string,
-		worker_id -> string,
-		date -> string
-*/
-func GetAttendance(w http.ResponseWriter, r *http.Request) {
-	var d time.Time
+// call mongodb
+var mongoDb, _, _ = db.DbCon("map_places")
+
+func GetPlaces(w http.ResponseWriter, r *http.Request) {
+	// define places result models
+	var placesArray []models.Places
+	var placesSingle models.Places
+
+	// define place search response from google map
+	var places maps.PlacesSearchResponse
+
+	// define error
 	var err error
 
-	// return api response
+	// set json response
 	w.Header().Set("Content-type", "application/json")
 
-	// set url query request
-	projectId := r.FormValue("project_id")
-	workerId := r.FormValue("worker_id")
-	date := r.FormValue("date")
+	// get query params
+	place := r.FormValue("place")
 
-	// create channel for data result
-	c := make(chan []models.Attendance)
+	if place == "" {
+		errHandler.ErrorResponse(w, 0, http.StatusBadRequest, "Place required")
+		return
+	}
 
-	// convert project & worker id to int32
-	pId, _ := strconv.Atoi(projectId)
-	wId, _ := strconv.Atoi(workerId)
+	// find the keyword
+	c := make(chan []models.Keywords)
+	go FindKeyWord(place, c)
+	cRes := <-c
 
-	// convert to date
-	if date != "" {
-		d, err = time.Parse("2006-01-02", date)
+	if len(cRes) == 0 {
+		places, err = helpers.GmapsPlace(place)
 		if err != nil {
-			errHandler.ErrorResponse(w, 0, http.StatusBadRequest, "Error: " + err.Error())
+			errHandler.ErrorResponse(w, 0, http.StatusInternalServerError, err.Error())
 			return
 		}
+
+		// save keyword if data not exist
+		go SaveKeyword(place)
+
+		for _, res := range places.Results {
+			// set places item
+			placesSingle.Keyword = place
+			placesSingle.PlaceId = res.PlaceID
+			placesSingle.Name = res.Name
+			placesSingle.Address = res.FormattedAddress
+			placesSingle.Lat = res.Geometry.Location.Lat
+			placesSingle.Lon = res.Geometry.Location.Lng
+
+			// save keyword if data not exist
+			go SavePlaces(placesSingle)
+
+			// append to array places
+			placesArray = append(placesArray, placesSingle)
+		}
+	} else {
+		cPlace := make(chan []models.Places)
+		go FindPlaces(place, cPlace)
+		placesArray = <- cPlace
 	}
 
-	// find attendance
-	go FindAttendance(pId, wId, d, c)
-	res := <-c
-
-	// set api response
 	w.WriteHeader(http.StatusOK)
-	response := models.Result{
+	response := models.ResultPlaces{
 		Code:    1,
-		Message: "Worker Attendance",
-		Data:    res,
+		Message: "Places",
+		Data:    placesArray,
 	}
-
-	// convert to json
 	err = json.NewEncoder(w).Encode(response)
 	errHandler.ErrHandler("Error json response: ", err)
 }
 
-func FindAttendance(projectId int, workerId int, d time.Time, c chan []models.Attendance) {
-	var results []models.Attendance
+/*
+	FIND KEYWORD
+*/
+func FindKeyWord(keyword string, c chan []models.Keywords) {
+	// Here's an array in which you can store the decoded documents
+	var results []models.Keywords
 
-	// get filter model
-	filter := setFilter(projectId, workerId, d)
-
-	// get data from database
-	cur, err := DbCon.Collection("worker_attendance").Find(context.Background(), filter)
-	errHandler.ErrHandler("Error get data Attendance: ", err)
-
-	// looping data
-	for cur.Next(context.Background()) {
-		var s models.Attendance
-
-		// create a value into which the single document can be decoded
-		err := cur.Decode(&s)
-		errHandler.ErrHandler("Error decode data to attendance model: ", err)
-
-		// get attendance code
-		c := make(chan models.AttendanceCode)
-		go FindAttendanceCode(int(s.ProjectId), c)
-		resAttCode := <-c
-
-		s.AttendanceCode = resAttCode
-
-		// convert time to local time asia/jakarta - wib
-		s.CreatedDate = helpers.DateTimeFormat(s.CreatedDate)
-		s.UpdatedDate = helpers.DateTimeFormat(s.UpdatedDate)
-
-		// append to array result
-		results = append(results, s)
+	filter := bson.M{
+		"keyword": keyword,
 	}
 
-	// set result to channel
+	// Passing bson.M{} as the filter matches all documents in the collection
+	cur, err := mongoDb.Collection("keywords").Find(context.Background(), filter)
+	errHandler.ErrHandler("Error finding keyword: ", err)
+
+	// Finding multiple documents returns a cursor
+	// Iterating through the cursor allows us to decode documents one at a time
+	for cur.Next(context.Background()) {
+
+		// create a value into which the single document can be decoded
+		var elem models.Keywords
+		err = cur.Decode(&elem)
+		errHandler.ErrHandler("Error decode data: ", err)
+
+		results = append(results, elem)
+	}
+
+	err = cur.Err()
+	errHandler.ErrHandler("Error cursor: ", err)
+
+	// Close the cursor once finished
+	err = cur.Close(context.Background())
+	errHandler.ErrHandler("Error close cursor: ", err)
+
 	c <- results
 }
 
-func setFilter(projectId int, workerId int, d time.Time) bson.M {
-	// date format
-	dt, _ := helpers.DateFormat(d, "ISO")
-
-	//set default filter
-	filter := bson.M{
-		"projectId": projectId,
-		"workerId":  workerId,
-		"date":      dt,
-		"isDeleted": false,
+/*
+	SAVE KEYWORD
+*/
+func SaveKeyword(keyword string) {
+	keywordData := map[string]string{
+		"keyword": keyword,
 	}
 
-	// if all parameters value are empty
-	if projectId == 0 && workerId == 0 && d.IsZero() {
-		filter = bson.M{
-			"isDeleted": false,
-		}
-	}
-	// if projectId is not empty and the rest are empty
-	if projectId != 0 && workerId == 0 && d.IsZero() {
-		filter = bson.M{
-			"projectId": projectId,
-			"isDeleted": false,
-		}
-	}
-	// if workerId is not empty and the rest are empty
-	if projectId == 0 && workerId != 0 && d.IsZero() {
-		filter = bson.M{
-			"workerId":  workerId,
-			"isDeleted": false,
-		}
-	}
-	// if date is not empty and the rest are empty
-	if projectId == 0 && workerId == 0 && !d.IsZero() {
-		filter = bson.M{
-			"date":      dt,
-			"isDeleted": false,
-		}
-	}
-	// if projectId and workerId is not empty and the rest are empty
-	if projectId != 0 && workerId != 0 && d.IsZero() {
-		filter = bson.M{
-			"projectId": projectId,
-			"workerId":  workerId,
-			"isDeleted": false,
-		}
-	}
-	// if projectId and date is not empty and the rest are empty
-	if projectId != 0 && workerId == 0 && !d.IsZero() {
-		filter = bson.M{
-			"projectId": projectId,
-			"date":      dt,
-			"isDeleted": false,
-		}
-	}
-	// if workerId and date is not empty and the rest are empty
-	if projectId == 0 && workerId != 0 && !d.IsZero() {
-		filter = bson.M{
-			"workerId":  workerId,
-			"date":      dt,
-			"isDeleted": false,
-		}
-	}
+	// save data
+	insertPlace, err := mongoDb.Collection("keywords").InsertOne(context.Background(), keywordData)
+	errHandler.ErrHandler("Error save data: ", err)
 
-	return filter
+	// print status
+	status := fmt.Sprintf("Inserted multiple documents: %v", insertPlace.InsertedID)
+	fmt.Println(status)
 }
 
-func FindAttendanceCode(
-	projectId int,
-	c chan models.AttendanceCode) {
-	var results models.AttendanceCode
+func SavePlaces(places models.Places) {
+	// save data
+	insertPlace, err := mongoDb.Collection("places").InsertOne(context.Background(), places)
+	errHandler.ErrHandler("Error save data: ", err)
 
-	// get filter model
+	// print status
+	status := fmt.Sprintf("Inserted multiple documents: %v", insertPlace.InsertedID)
+	fmt.Println(status)
+}
+
+/*
+	FIND PLACES
+*/
+func FindPlaces(keyword string, c chan []models.Places) {
+	// Here's an array in which you can store the decoded documents
+	var results []models.Places
+
 	filter := bson.M{
-		"projectId": projectId,
+		"keyword": keyword,
 	}
 
-	// get data from database
-	err := DbCon.Collection("code_attendance").FindOne(context.Background(), filter).Decode(&results)
-	errHandler.ErrHandler("Error get Attendance Code: ", err)
+	// Passing bson.M{} as the filter matches all documents in the collection
+	cur, err := mongoDb.Collection("places").Find(context.Background(), filter)
+	errHandler.ErrHandler("Error finding places: ", err)
 
-	// convert time to local time asia/jakarta - wib
-	results.CreatedDate = helpers.DateTimeFormat(results.CreatedDate)
-	results.UpdatedDate = helpers.DateTimeFormat(results.UpdatedDate)
+	// Finding multiple documents returns a cursor
+	// Iterating through the cursor allows us to decode documents one at a time
+	for cur.Next(context.Background()) {
 
-	// set result to channel
+		// create a value into which the single document can be decoded
+		var elem models.Places
+		err = cur.Decode(&elem)
+		errHandler.ErrHandler("Error decode data: ", err)
+
+		results = append(results, elem)
+	}
+
+	err = cur.Err()
+	errHandler.ErrHandler("Error cursor: ", err)
+
+	// Close the cursor once finished
+	err = cur.Close(context.Background())
+	errHandler.ErrHandler("Error close cursor: ", err)
+
 	c <- results
 }
