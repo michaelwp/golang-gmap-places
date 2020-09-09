@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"kanggo/absenService/configs"
-	"kanggo/absenService/errHandler"
 	"kanggo/absenService/models"
 	v1 "kanggo/absenService/server/v1"
 	"net/http"
@@ -17,7 +16,10 @@ import (
 func TestGetAttendance(t *testing.T) {
 	// Set env
 	err := configs.SetEnv()
-	errHandler.ErrHandler("Error set env: ", err)
+	// if error
+	if err != nil {
+		t.Fatalf("Error set rnv %v", err)
+	}
 
 	// define the model
 	var respModel models.ResultPlaces
