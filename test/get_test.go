@@ -15,7 +15,11 @@ import (
 
 func TestGetAttendance(t *testing.T) {
 	// Set env
-	configs.SetEnv()
+	err := configs.SetEnv()
+	// if error
+	if err != nil {
+		t.Fatalf("Error set rnv %v", err)
+	}
 
 	// define the model
 	var respModel models.ResultPlaces
