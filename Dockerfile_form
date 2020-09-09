@@ -6,6 +6,7 @@ WORKDIR /go/src/kanggo/smsService/
 
 ENV MONGODB_URL=""
 ENV SERVER_PORT=""
+ENV GOOGLE_API_KEY=""
 
 RUN go get -d -v go.mongodb.org/mongo-driver/mongo \
     && go get -d -v github.com/gorilla/mux \
