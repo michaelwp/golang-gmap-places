@@ -2,7 +2,7 @@ package routers
 
 import (
 	"github.com/gorilla/mux"
-	"kanggo/absenService/routers/v1"
+	"github.com/michaelwp/golang-gmap-places/routers/v1"
 )
 
 func Router(m *mux.Router) {

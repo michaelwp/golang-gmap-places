@@ -3,8 +3,8 @@ package v1
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	v1 "kanggo/absenService/controllers/v1"
-	"kanggo/absenService/errHandler"
+	v1 "github.com/michaelwp/golang-gmap-places/controllers/v1"
+	"github.com/michaelwp/golang-gmap-places/errHandler"
 	"net/http"
 )
 

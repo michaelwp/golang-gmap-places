@@ -2,7 +2,7 @@ package errHandler
 
 import (
 	"encoding/json"
-	"kanggo/absenService/models"
+	"github.com/michaelwp/golang-gmap-places/models"
 	"log"
 	"net/http"
 )

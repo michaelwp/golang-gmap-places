@@ -3,8 +3,8 @@ package v1
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"kanggo/absenService/middlewares"
-	"kanggo/absenService/routers"
+	"github.com/michaelwp/golang-gmap-places/middlewares"
+	"github.com/michaelwp/golang-gmap-places/routers"
 	"net/http"
 	"time"
 )

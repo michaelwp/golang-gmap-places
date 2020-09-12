@@ -1,4 +1,4 @@
-module kanggo/absenService
+module github.com/michaelwp/golang-gmap-places
 
 go 1.14
 

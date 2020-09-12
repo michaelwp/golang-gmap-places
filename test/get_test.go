@@ -3,17 +3,17 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/michaelwp/golang-gmap-places/configs"
+	"github.com/michaelwp/golang-gmap-places/models"
+	v1 "github.com/michaelwp/golang-gmap-places/server/v1"
 	"io/ioutil"
-	"kanggo/absenService/configs"
-	"kanggo/absenService/models"
-	v1 "kanggo/absenService/server/v1"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 )
 
-func TestGetAttendance(t *testing.T) {
+func TestGetPlaces(t *testing.T) {
 	// Set env
 	err := configs.SetEnv()
 	// if error
@@ -79,11 +79,13 @@ func TestGetAttendance(t *testing.T) {
 	}
 
 	// Assert the response content
-	if respModel.Code != 1 {
-		t.Fatalf("Expected response code 1, got %v", respModel.Code)
+	if respModel.Code != configs.Code("SUCCESS") {
+		t.Fatalf("Expected response code %v, got %v",
+			configs.Code("SUCCESS"), respModel.Code)
 	}
-	if respModel.Message != "Places" {
-		t.Fatalf("Expected response messages places, got %v", respModel.Message)
+	if respModel.Message != configs.Message("PLACES") {
+		t.Fatalf("Expected response messages \"%v\" , got %v",
+			configs.Message("PLACES"), respModel.Message)
 	}
 	if respModel.Data == nil {
 		t.Fatalf("Expected response data not nil, got %v", respModel.Data)

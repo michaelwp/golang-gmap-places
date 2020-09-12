@@ -1,4 +1,4 @@
-## absen-service api documentation :
+## gmap-service api documentation :
 > Version: 1
 - ```API-BASE-URL: http://0.0.0.0/api/v1```
 
@@ -10,7 +10,7 @@
 - `GET /map`
 
 #### Error response format:
- - `status`: `4xx`
+ - `status`: `4xx`,`5xx`
  - ```json 
    {
        "code": 0,
@@ -34,7 +34,7 @@
   - ```json
        {
            "code": 1,
-           "message": "Places",
+           "message": "places",
            "data": [
                {
                    "keyword": "kanggo",
@@ -63,3 +63,10 @@
            ]
        }
     ```
+  - ```json
+         {
+             "code": 1,
+             "message": "places",
+             "data": null
+         }
+      ```

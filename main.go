@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"kanggo/absenService/server/v1"
+	"github.com/michaelwp/golang-gmap-places/server/v1"
 	"log"
 	"os"
 )
 /*
-	Created 24 August 2020, by MPutong
-	SMS - Service
+	Created 12 September 2020, by Michael W. Putong
+	Google Map - Service
 */
 
 func main(){

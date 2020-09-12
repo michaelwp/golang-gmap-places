@@ -3,38 +3,37 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/michaelwp/golang-gmap-places/configs"
+	"github.com/michaelwp/golang-gmap-places/db/v1"
+	"github.com/michaelwp/golang-gmap-places/errHandler"
+	"github.com/michaelwp/golang-gmap-places/helpers"
+	"github.com/michaelwp/golang-gmap-places/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"googlemaps.github.io/maps"
-	"kanggo/absenService/db/v1"
-	"kanggo/absenService/errHandler"
-	"kanggo/absenService/helpers"
-	"kanggo/absenService/models"
 	"net/http"
+	"strings"
 )
 
 // call mongodb
 var mongoDb, _, _ = db.DbCon("map_places")
 
 func GetPlaces(w http.ResponseWriter, r *http.Request) {
-	// define places result models
+	//define places result models
 	var placesArray []models.Places
-	var placesSingle models.Places
 
-	// define place search response from google map
-	var places maps.PlacesSearchResponse
-
-	// define error
+	//define error
 	var err error
 
 	// set json response
 	w.Header().Set("Content-type", "application/json")
 
 	// get query params
-	place := r.FormValue("place")
+	place := strings.ToLower(r.FormValue("place"))
 
 	if place == "" {
-		errHandler.ErrorResponse(w, 0, http.StatusBadRequest, "Place required")
+		errHandler.ErrorResponse(
+			w, configs.Code("ERROR"),
+			http.StatusBadRequest,
+			configs.Message("PLACE_REQUIRED"))
 		return
 	}
 
@@ -44,40 +43,25 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	cRes := <-c
 
 	if len(cRes) == 0 {
-		places, err = helpers.GmapsPlace(place)
+		// get places list from google map
+		placesArray, err = helpers.GmapsAutoComplete(place)
 		if err != nil {
-			errHandler.ErrorResponse(w, 0, http.StatusInternalServerError, err.Error())
+			errHandler.ErrorResponse(
+				w, configs.Code("ERROR"),
+				http.StatusInternalServerError,
+				err.Error())
 			return
-		}
-
-		// save keyword if data not exist
-		go SaveKeyword(place)
-
-		for _, res := range places.Results {
-			// set places item
-			placesSingle.Keyword = place
-			placesSingle.PlaceId = res.PlaceID
-			placesSingle.Name = res.Name
-			placesSingle.Address = res.FormattedAddress
-			placesSingle.Lat = res.Geometry.Location.Lat
-			placesSingle.Lon = res.Geometry.Location.Lng
-
-			// save keyword if data not exist
-			go SavePlaces(placesSingle)
-
-			// append to array places
-			placesArray = append(placesArray, placesSingle)
 		}
 	} else {
 		cPlace := make(chan []models.Places)
 		go FindPlaces(place, cPlace)
-		placesArray = <- cPlace
+		placesArray = <-cPlace
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := models.ResultPlaces{
-		Code:    1,
-		Message: "Places",
+		Code:    configs.Code("SUCCESS"),
+		Message: configs.Message("PLACES"),
 		Data:    placesArray,
 	}
 	err = json.NewEncoder(w).Encode(response)
@@ -119,33 +103,6 @@ func FindKeyWord(keyword string, c chan []models.Keywords) {
 	errHandler.ErrHandler("Error close cursor: ", err)
 
 	c <- results
-}
-
-/*
-	SAVE KEYWORD
-*/
-func SaveKeyword(keyword string) {
-	keywordData := map[string]string{
-		"keyword": keyword,
-	}
-
-	// save data
-	insertPlace, err := mongoDb.Collection("keywords").InsertOne(context.Background(), keywordData)
-	errHandler.ErrHandler("Error save data: ", err)
-
-	// print status
-	status := fmt.Sprintf("Inserted multiple documents: %v", insertPlace.InsertedID)
-	fmt.Println(status)
-}
-
-func SavePlaces(places models.Places) {
-	// save data
-	insertPlace, err := mongoDb.Collection("places").InsertOne(context.Background(), places)
-	errHandler.ErrHandler("Error save data: ", err)
-
-	// print status
-	status := fmt.Sprintf("Inserted multiple documents: %v", insertPlace.InsertedID)
-	fmt.Println(status)
 }
 
 /*

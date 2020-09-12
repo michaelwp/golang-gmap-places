@@ -1,8 +1,8 @@
 FROM golang:latest
 
-COPY . /go/src/kanggo/smsService/
+COPY . /go/src/kanggo/mapService/
 
-WORKDIR /go/src/kanggo/smsService/
+WORKDIR /go/src/kanggo/mapService/
 
 ENV MONGODB_URL=""
 ENV SERVER_PORT=""
@@ -10,7 +10,7 @@ ENV GOOGLE_API_KEY=""
 
 RUN go get -d -v go.mongodb.org/mongo-driver/mongo \
     && go get -d -v github.com/gorilla/mux \
-    && go get -d -v github.com/gorilla/handlers
+    && go get -d -v github.com/gorilla/handlers \
     && go get googlemaps.github.io/maps
 
 EXPOSE 8093
@@ -19,4 +19,4 @@ RUN go build -o main main.go
 
 RUN ls -la
 
-CMD ./main
+CMD ["./main"]
