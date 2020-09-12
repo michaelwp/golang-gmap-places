@@ -1,28 +1,31 @@
 {
-  "name": "gmapService",
+  "name": "golang-gmap-places",
   "version": "1.0.0",
   "description": "GMAP SERVICES",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
+  "dependencies": {
+    "pre-push": "^0.1.1"
+  },
+  "devDependencies": {
+    "pre-push": "^0.1.1"
+  },
   "scripts": {
     "test": "go test ./test -v"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/michaelwp/gmapservices.git"
+    "url": "git+https://github.com/michaelwp/golang-gmap-places.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["golang","gmap","google map"],
+  "author": "Michael Putong",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/michaelwp/gmapservices/issues"
+    "url": "https://github.com/michaelwp/golang-gmap-places/issues"
   },
-  "homepage": "https://gitlab.com/michaelwp/gmapservices#readme",
-  "devDependencies": {
-    "pre-push": "^0.1.1"
-  },
+  "homepage": "https://github.com/michaelwp/golang-gmap-places#readme",
   "pre-push": [
     "test"
   ]
