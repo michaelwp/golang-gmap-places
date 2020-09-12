@@ -1,19 +1,9 @@
 config:
-#  target: 'http://localhost:8093/api/v1'
-  target: 'http://147.139.182.234/api/v1'
+  target: 'http://localhost:8093/api/v1'
   phases:
     - duration: 60
       arrivalRate: 20
 scenarios:
   - flow:
-      - post:
-          url: "/attendance"
-          json:
-            {
-              "project_id": 5678,
-      		  "worker_id": 1234,
-      		  "image": "http://asd",
-      		  "status": 2
-            }
       - get:
-          url: "/attendance?project_id=5678&worker_id=1234&date=2020-09-02"
+          url: "/map?place=bsd"

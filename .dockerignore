@@ -1,7 +1,11 @@
-go.mod
-.air.toml
+.idea
 tmp
-go.sum
+configs/SetEnv.go
+.DS_Store
 .env
+Dockerfile
 main
 node_modules
+go.mod
+go.sum
+loadTest.yml

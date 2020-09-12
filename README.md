@@ -65,8 +65,8 @@
     ```
   - ```json
          {
-             "code": 1,
-             "message": "places",
+             "code": 3,
+             "message": "places not found",
              "data": null
          }
       ```

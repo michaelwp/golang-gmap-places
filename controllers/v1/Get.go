@@ -58,6 +58,14 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 		placesArray = <-cPlace
 	}
 
+	if placesArray == nil {
+		errHandler.ErrorResponse(
+			w, configs.Code("NOT FOUND"),
+			http.StatusOK,
+			configs.Message("PLACES_NOT_FOUND"))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response := models.ResultPlaces{
 		Code:    configs.Code("SUCCESS"),

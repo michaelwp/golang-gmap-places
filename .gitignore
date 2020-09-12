@@ -1,9 +1,8 @@
 .idea
 tmp
-configs
+configs/SetEnv.go
 .DS_Store
 .env
 Dockerfile
 main
 node_modules
-configs
