@@ -6,4 +6,4 @@ config:
 scenarios:
   - flow:
       - get:
-          url: "/map?place=bsd"
+          url: "/map?place=google&country=id"
