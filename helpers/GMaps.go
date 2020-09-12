@@ -83,28 +83,34 @@ func GmapsPlaceDetails(s string) (maps.PlaceDetailsResult, error) {
 /*
 	GOOGLE MAP AUTO COMPLETE
 */
-func GmapsAutoComplete(s string) ([]models.Places, error) {
+func GmapsAutoComplete(s string, cid string) ([]models.Places, error) {
 	// set gmap client
 	c, err := Gmapsclient()
 
 	// set lat lng for location
-	loc.Lat = -6.264461
-	loc.Lng = 106.689820
-	l := &loc
+	//loc.Lat = -6.264461
+	//loc.Lng = 106.689820
+	//l := &loc
 
-	// limit the result to region indonesia only
-	country := []string{"ID"}
-	comp := map[maps.Component][]string{
-		"country": country,
+	var comp map[maps.Component][]string
+
+	if cid != "" {
+		// limit the result to region indonesia only
+		country := []string{cid}
+		comp = map[maps.Component][]string{
+			"country": country,
+		}
+	} else {
+		comp = nil
 	}
 
 	// setup option
 	p := &maps.PlaceAutocompleteRequest{
 		Input: s,
 		//Offset:       3,
-		Location: l,
+		//Location: l,
 		//Origin:       nil,
-		Radius: 200000,
+		//Radius: 200000,
 		//Language:     "",
 		//Types:        "",
 		Components: comp,
@@ -119,9 +125,9 @@ func GmapsAutoComplete(s string) ([]models.Places, error) {
 	var placesSingle models.Places
 
 	// limit the result to only 5 predictions result
-	if len(places.Predictions) > 5 {
-		places.Predictions = places.Predictions[:5]
-	}
+	//if len(places.Predictions) > 5 {
+	//	places.Predictions = places.Predictions[:5]
+	//}
 
 	for _, res := range places.Predictions {
 		placeDetail, _ := GmapsPlaceDetails(res.PlaceID)
@@ -130,6 +136,7 @@ func GmapsAutoComplete(s string) ([]models.Places, error) {
 		placesSingle.PlaceId = res.PlaceID
 		placesSingle.Name = res.StructuredFormatting.MainText
 		placesSingle.Address = placeDetail.FormattedAddress
+		placesSingle.Country = cid
 		placesSingle.Lat = placeDetail.Geometry.Location.Lat
 		placesSingle.Lon = placeDetail.Geometry.Location.Lng
 
@@ -143,7 +150,7 @@ func GmapsAutoComplete(s string) ([]models.Places, error) {
 	go func() {
 		if placesArray != nil {
 			// save keyword if data not exist
-			SaveKeyword(s)
+			SaveKeyword(s, cid)
 		}
 	}()
 
@@ -153,9 +160,10 @@ func GmapsAutoComplete(s string) ([]models.Places, error) {
 /*
 	SAVE KEYWORD
 */
-func SaveKeyword(keyword string) {
+func SaveKeyword(keyword string, cid string) {
 	keywordData := map[string]string{
 		"keyword": keyword,
+		"country": cid,
 	}
 
 	// save data

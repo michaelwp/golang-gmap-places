@@ -28,6 +28,7 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 	// get query params
 	place := strings.ToLower(r.FormValue("place"))
+	cid := strings.ToLower(r.FormValue("country"))
 
 	if place == "" {
 		errHandler.ErrorResponse(
@@ -39,12 +40,12 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 
 	// find the keyword
 	c := make(chan []models.Keywords)
-	go FindKeyWord(place, c)
+	go FindKeyWord(place, cid, c)
 	cRes := <-c
 
 	if len(cRes) == 0 {
 		// get places list from google map
-		placesArray, err = helpers.GmapsAutoComplete(place)
+		placesArray, err = helpers.GmapsAutoComplete(place, cid)
 		if err != nil {
 			errHandler.ErrorResponse(
 				w, configs.Code("ERROR"),
@@ -54,7 +55,7 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		cPlace := make(chan []models.Places)
-		go FindPlaces(place, cPlace)
+		go FindPlaces(place, cid, cPlace)
 		placesArray = <-cPlace
 	}
 
@@ -79,12 +80,13 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 /*
 	FIND KEYWORD
 */
-func FindKeyWord(keyword string, c chan []models.Keywords) {
+func FindKeyWord(keyword string, cid string, c chan []models.Keywords) {
 	// Here's an array in which you can store the decoded documents
 	var results []models.Keywords
 
 	filter := bson.M{
 		"keyword": keyword,
+		"country": cid,
 	}
 
 	// Passing bson.M{} as the filter matches all documents in the collection
@@ -116,12 +118,13 @@ func FindKeyWord(keyword string, c chan []models.Keywords) {
 /*
 	FIND PLACES
 */
-func FindPlaces(keyword string, c chan []models.Places) {
+func FindPlaces(keyword string, cid string, c chan []models.Places) {
 	// Here's an array in which you can store the decoded documents
 	var results []models.Places
 
 	filter := bson.M{
 		"keyword": keyword,
+		"country": cid,
 	}
 
 	// Passing bson.M{} as the filter matches all documents in the collection

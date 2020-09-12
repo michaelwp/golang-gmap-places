@@ -10,6 +10,7 @@ type Places struct {
 	PlaceId string  `json:"place_id"`
 	Name    string  `json:"name"`
 	Address string  `json:"address"`
+	Country string  `json:"country"`
 	Lat     float64 `json:"lat"`
 	Lon     float64 `json:"lon"`
 }
