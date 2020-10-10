@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/michaelwp/golang-gmap-places/configs"
 	"github.com/michaelwp/golang-gmap-places/db/v1"
 	"github.com/michaelwp/golang-gmap-places/errHandler"
@@ -49,7 +48,6 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 			"error while find keywords")
 		return
 	}
-	fmt.Println(<-errChan)
 	if len(<-keywords) == 0 {
 		// get places list from google map
 		placesArray, err = helpers.GmapsAutoComplete(place, cid)
