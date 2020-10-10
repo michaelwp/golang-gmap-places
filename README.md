@@ -1,10 +1,12 @@
-## gmap-service api documentation :
-> Version: 1
-- ```API-BASE-URL: http://0.0.0.0:8093/api/v1```
+# Geocoding & Place API service:
+![forthebadge made-with-python](https://forthebadge.com/images/badges/made-with-go.svg)
 
--------
+## Prerequisite 
+Before using this api, please create your own API key and enable it for Geocoding API & Places API services (visit [here](https://developers.google.com/maps/documentation/geocoding/get-api-key))  
 
 ### List of available endpoints:
+```API-BASE-URL: http://0.0.0.0:8093/api/v1```
+
 
 #### map
 - `GET /map`
