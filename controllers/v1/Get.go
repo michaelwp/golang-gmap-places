@@ -21,7 +21,7 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	var placesArray []models.Places
 
 	//define error
-	var err error
+	var (err error)
 
 	// set json response
 	w.Header().Set("Content-type", "application/json")
@@ -39,11 +39,16 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find the keyword
-	c := make(chan []models.Keywords)
-	go FindKeyWord(place, cid, c)
-	cRes := <-c
-
-	if len(cRes) == 0 {
+	//go FindKeyWord(place, cid, c)
+	keywords, errChan := FindKeyWordAsync(r.Context(), place, cid)
+	if <-errChan != nil {
+		errHandler.ErrorResponse(
+			w, configs.Code("ERROR"),
+			http.StatusBadRequest,
+			"error while find keywords")
+		return
+	}
+	if len(<-keywords) == 0 {
 		// get places list from google map
 		placesArray, err = helpers.GmapsAutoComplete(place, cid)
 		if err != nil {
@@ -55,7 +60,7 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		cPlace := make(chan []models.Places)
-		go FindPlaces(place, cid, cPlace)
+		go FindPlaces(r.Context(), place, cid, cPlace)
 		placesArray = <-cPlace
 	}
 
@@ -80,45 +85,68 @@ func GetPlaces(w http.ResponseWriter, r *http.Request) {
 /*
 	FIND KEYWORD
 */
-func FindKeyWord(keyword string, cid string, c chan []models.Keywords) {
+func FindKeyWord(ctx context.Context, keyword string, cid string) (keywords []models.Keywords, err error) {
 	// Here's an array in which you can store the decoded documents
-	var results []models.Keywords
-
 	filter := bson.M{
 		"keyword": keyword,
 		"country": cid,
 	}
 
 	// Passing bson.M{} as the filter matches all documents in the collection
-	cur, err := mongoDb.Collection("keywords").Find(context.Background(), filter)
-	errHandler.ErrHandler("Error finding keyword: ", err)
-
+	cur, err := mongoDb.Collection("keywords").Find(ctx, filter)
+	if err != nil {
+		errHandler.ErrHandler("Error finding keyword: ", err)
+		return keywords, err
+	}
 	// Finding multiple documents returns a cursor
 	// Iterating through the cursor allows us to decode documents one at a time
-	for cur.Next(context.Background()) {
-
+	for cur.Next(ctx) {
 		// create a value into which the single document can be decoded
 		var elem models.Keywords
 		err = cur.Decode(&elem)
-		errHandler.ErrHandler("Error decode data: ", err)
-
-		results = append(results, elem)
+		if err != nil {
+			errHandler.ErrHandler("Error decode data: ", err)
+			return keywords, err
+		}
+		keywords = append(keywords, elem)
 	}
 
 	err = cur.Err()
-	errHandler.ErrHandler("Error cursor: ", err)
+	if err != nil {
+		errHandler.ErrHandler("Error cursor: ", err)
+		return keywords, err
+	}
+
 
 	// Close the cursor once finished
-	err = cur.Close(context.Background())
-	errHandler.ErrHandler("Error close cursor: ", err)
+	err = cur.Close(ctx)
+	if err != nil {
+		errHandler.ErrHandler("Error close cursor: ", err)
+		return keywords, err
+	}
+	return
+}
 
-	c <- results
+func FindKeyWordAsync(ctx context.Context, keyword string, cid string) (<-chan[]models.Keywords, <-chan error){
+	dataChan := make(chan []models.Keywords, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		defer close(dataChan)
+		defer close(errChan)
+		keywords, err := FindKeyWord(ctx, keyword, cid)
+		if err != nil {
+			errChan <- err
+		}
+		dataChan <- keywords
+	}()
+	return dataChan, errChan
 }
 
 /*
 	FIND PLACES
 */
-func FindPlaces(keyword string, cid string, c chan []models.Places) {
+func FindPlaces(ctx context.Context, keyword string, cid string, c chan []models.Places) {
 	// Here's an array in which you can store the decoded documents
 	var results []models.Places
 
@@ -133,7 +161,7 @@ func FindPlaces(keyword string, cid string, c chan []models.Places) {
 
 	// Finding multiple documents returns a cursor
 	// Iterating through the cursor allows us to decode documents one at a time
-	for cur.Next(context.Background()) {
+	for cur.Next(ctx) {
 
 		// create a value into which the single document can be decoded
 		var elem models.Places
@@ -147,7 +175,7 @@ func FindPlaces(keyword string, cid string, c chan []models.Places) {
 	errHandler.ErrHandler("Error cursor: ", err)
 
 	// Close the cursor once finished
-	err = cur.Close(context.Background())
+	err = cur.Close(ctx)
 	errHandler.ErrHandler("Error close cursor: ", err)
 
 	c <- results
